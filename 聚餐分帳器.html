@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>聚餐分帳器</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f5ef;color:#20372c;font:17px/1.6 system-ui,sans-serif}main{max-width:680px;margin:auto;padding:44px 22px}header p{color:#64736b}h1{font-size:34px;margin:0}h2{font-size:19px;margin:0 0 16px}.card{background:white;border:1px solid #dce4d9;border-radius:22px;padding:26px;margin-top:24px;box-shadow:0 8px 30px #20372c06}.fields{display:grid;grid-template-columns:1fr 1fr;gap:20px}label{display:block;font-weight:650}input[type=text],input[type=number]{display:block;width:100%;margin-top:8px;padding:12px;border:1px solid #9daea1;border-radius:10px;font:inherit;color:inherit;background:white}input:focus-visible{outline:3px solid #84b99b;outline-offset:2px}.toggle{display:flex;align-items:center;gap:12px;margin-top:22px;cursor:pointer}input[type=checkbox]{width:22px;height:22px;accent-color:#27634b}.note{font-size:14px;color:#64736b}.row{display:flex;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid #e6ebe5}.row strong{font-size:23px;text-align:right}.payer{background:#edf5e9;border-radius:12px;padding:16px;margin-top:14px}.payer strong{color:#225b40}.badge{font-size:14px;margin:6px 0 0;color:#466342}.total{margin-top:16px;font-weight:700}.check{color:#27634b;font-size:14px}#error{color:#a23125;margin:0}footer{margin-top:24px;color:#64736b;font-size:14px} [hidden]{display:none!important}@media(max-width:440px){main{padding:28px 16px}.card{padding:20px}.fields{grid-template-columns:1fr;gap:16px}h1{font-size:29px}.row strong{font-size:21px}}
+</style>
+<main>
+<header><p class="note">一起吃飯，輕鬆算清楚</p><h1>聚餐分帳器</h1><p>其他人付整數商，零頭由付錢的人承擔。</p></header>
+<section class="card" aria-label="分帳設定"><div class="fields">
+<label for="amount">總金額（元）<input id="amount" type="text" inputmode="numeric" value="1000" autocomplete="off" spellcheck="false" aria-describedby="rule"></label>
+<label for="people">人數（含付錢的人）<input id="people" type="number" inputmode="numeric" min="1" max="1000000" step="1" value="3" autocomplete="off"></label></div>
+<label class="toggle"><input id="service" type="checkbox" autocomplete="off">加收 10% 服務費</label>
+<p class="note" id="rule">總金額請輸入整數元，可含千分位逗號。服務費四捨五入至整數元後加入總額。</p></section>
+<section class="card" aria-live="polite" aria-atomic="true"><p id="error" role="alert" hidden></p><div id="result"><h2>這次怎麼分</h2><div class="row payer"><div>付錢的人<p class="badge" id="remainder"></p></div><strong id="payer"></strong></div><div class="row"><span id="othersLabel"></span><strong id="others"></strong></div><div class="row note"><span>服務費</span><span id="fee"></span></div><div class="row total"><span>應付總額</span><strong id="total"></strong></div><p class="check" id="check"></p></div></section>
+<footer>完全離線使用 · 不需登入 · 不儲存輸入資料<br>金額以元計算；付錢者的金額是自己應分攤的部分。</footer>
+</main>
+<script>
+'use strict';
+const el=id=>document.getElementById(id);
+const fmt=n=>n.toLocaleString('zh-TW');
+function calculate(amount,people,service){const fee=service?(amount+5n)/10n:0n;const total=amount+fee;const share=total/people;const remainder=total%people;return {fee,total,share,remainder,payer:share+remainder};}
+function update(){
+ const raw=el('amount').value.trim(),count=el('people').value;
+ let error='';
+ if(!/^(?:\d+|\d{1,3}(?:,\d{3})+)$/.test(raw))error='請輸入有效的總金額（0 或正整數元）。';
+ else if(raw.replaceAll(',','').length>15)error='總金額最多可輸入 15 位數。';
+ else if(!/^\d+$/.test(count)||BigInt(count)<1n||BigInt(count)>1000000n)error='人數請輸入 1 至 1,000,000 的整數。';
+ el('error').hidden=!error;el('result').hidden=!!error;el('error').textContent=error;if(error)return;
+ const people=BigInt(count),r=calculate(BigInt(raw.replaceAll(',','')),people,el('service').checked);
+ el('payer').textContent=fmt(r.payer)+' 元';el('othersLabel').textContent='其他 '+fmt(people-1n)+' 人';el('others').textContent=people===1n?'無其他人':'各 '+fmt(r.share)+' 元';
+ el('remainder').textContent='已含全部零頭 '+fmt(r.remainder)+' 元'+(r.remainder===0n?'（本次無零頭）':'');
+ el('fee').textContent=fmt(r.fee)+' 元'+(el('service').checked?'（10%）':'（未加收）');el('total').textContent=fmt(r.total)+' 元';
+ el('check').textContent='✓ 加總核對：'+fmt(r.payer)+' + '+fmt(r.share)+' × '+fmt(people-1n)+' = '+fmt(r.total)+' 元';
+}
+for(const id of ['amount','people','service'])el(id).addEventListener('input',update);
+window.addEventListener('pageshow',()=>{el('amount').value='1000';el('people').value='3';el('service').checked=false;update()});update();
+</script>
+</html>
