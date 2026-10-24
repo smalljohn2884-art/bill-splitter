@@ -1,0 +1,18 @@
+# Never commit secrets or local credentials
+.env
+.env.*
+*.env
+*.env.*
+secrets.json
+secrets.*
+*.secrets.*
+*credentials*.json
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+.npmrc
+.pypirc
+.netrc
